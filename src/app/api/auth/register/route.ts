@@ -22,14 +22,14 @@ export async function POST(request: Request) {
         name,
         email,
         phone,
-        password, // In production, hash with bcrypt
+        password,
         role: role || "BUYER",
         ...(role === "MERCHANT" && storeName
           ? {
               store: {
                 create: {
                   storeName,
-                  slug: storeName.toLowerCase().replace(/[^a-z0-0]/g, "-"),
+                  slug: storeName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
                   phone,
                   location: "Kigali Downtown",
                 },
