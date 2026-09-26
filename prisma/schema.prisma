@@ -56,19 +56,19 @@ model Store {
 }
 
 model Product {
-  id              String   @id @default(cuid())
-  sku             String   @unique
-  name            String
-  category        String
-  brand           String
-  description     String?
-  wholesalePrice  Float    @default(0)
-  suggestedRetail Float
-  stockQuantity   Int      @default(0)
-  imageUrl        String?
-  isCustomMerchantProduct Boolean @default(false) // True niba ari stock y'umucuruzi ubwe
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  sku                     String   @unique
+  name                    String
+  category                String
+  brand                   String
+  description             String?
+  wholesalePrice          Float    @default(0)
+  suggestedRetail         Float
+  stockQuantity           Int      @default(0)
+  imageUrl                String?
+  isCustomMerchantProduct Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   merchantProducts MerchantProduct[]
   orderItems       OrderItem[]
@@ -90,11 +90,13 @@ model MerchantProduct {
 
 model Order {
   id              String      @id @default(cuid())
+  trackingNumber  String      @unique @default(cuid())
   customerName    String
   customerPhone   String
   deliveryAddress String
   totalAmount     Float
-  netProfit       Float       @default(0)
+  platformFee     Float       @default(0) // 2% fee ku custom products
+  merchantEarning Float       @default(0) // 5% commission ku central stock / 98% ku custom
   status          OrderStatus @default(PENDING)
   paymentMethod   String      @default("MOMO")
   createdAt       DateTime    @default(now())
