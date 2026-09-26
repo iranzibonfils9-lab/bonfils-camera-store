@@ -1,0 +1,219 @@
+import Header from "@/components/layout/Header";
+
+const featuredCategories = [
+  { name: "CCTV Cameras", count: "120+ Products", icon: "📹" },
+  { name: "Recorders & DVRs", count: "45+ Products", icon: "📟" },
+  { name: "Solar Security", count: "30+ Products", icon: "☀️" },
+  { name: "Storage & HDDs", count: "25+ Products", icon: "💾" },
+];
+
+const featuredProducts = [
+  {
+    id: "prod-1",
+    name: "Hikvision 4MP Outdoor PTZ Camera",
+    category: "CCTV Cameras",
+    price: "80,000 RWF",
+    badge: "Popular",
+  },
+  {
+    id: "prod-2",
+    name: "Dahua 8-Channel DVR System",
+    category: "Recorders",
+    price: "135,000 RWF",
+    badge: "Best Value",
+  },
+  {
+    id: "prod-3",
+    name: "Wireless Solar Security Camera 4G",
+    category: "Solar Security",
+    price: "120,000 RWF",
+    badge: "New Arrival",
+  },
+  {
+    id: "prod-4",
+    name: "Seagate SkyHawk 2TB Surveillance HDD",
+    category: "Storage",
+    price: "60,000 RWF",
+    badge: "Essential",
+  },
+];
+
+export default function MarketplaceHomePage() {
+  return (
+    <main className="min-h-screen bg-slate-50">
+      <Header />
+
+      {/* HERO SECTION */}
+      <section className="border-b border-slate-200 bg-[#0B192C] px-6 py-16 text-white">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
+            <div>
+              <span className="rounded-full bg-emerald-500/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                Rwanda's B2B Security Camera Marketplace
+              </span>
+
+              <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+                Source & Resell Top Quality Security Equipment
+              </h1>
+
+              <p className="mt-4 text-base text-slate-300 md:text-lg">
+                Buy direct from BONFILS wholesale inventory or launch your own reseller camera store in minutes. Wholesale prices, guaranteed stock, and direct dispatch.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-4">
+                <a
+                  href="/merchant"
+                  className="rounded-xl bg-emerald-600 px-6 py-3.5 font-bold text-white shadow-lg transition hover:bg-emerald-500"
+                >
+                  Become a Merchant Reseller
+                </a>
+
+                <a
+                  href="#products"
+                  className="rounded-xl border border-slate-700 bg-slate-800/80 px-6 py-3.5 font-bold text-slate-200 transition hover:bg-slate-800 hover:text-white"
+                >
+                  Browse Catalog
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center backdrop-blur">
+              <p className="text-sm font-semibold text-slate-400">
+                BONFILS MARKETPLACE METRICS
+              </p>
+              <div className="mt-6 grid grid-cols-2 gap-6">
+                <div className="rounded-xl bg-slate-800/50 p-4">
+                  <p className="text-3xl font-extrabold text-emerald-400">500+</p>
+                  <p className="mt-1 text-xs text-slate-400">Products in Stock</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/50 p-4">
+                  <p className="text-3xl font-extrabold text-blue-400">50+</p>
+                  <p className="mt-1 text-xs text-slate-400">Active Resellers</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/50 p-4">
+                  <p className="text-3xl font-extrabold text-amber-400">100%</p>
+                  <p className="mt-1 text-xs text-slate-400">Authentic Hardware</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/50 p-4">
+                  <p className="text-3xl font-extrabold text-purple-400">24/7</p>
+                  <p className="mt-1 text-xs text-slate-400">Kigali Support</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CATEGORIES SECTION */}
+      <section className="px-6 py-12">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-2xl font-bold text-slate-900">
+            Browse by Category
+          </h2>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredCategories.map((cat) => (
+              <div
+                key={cat.name}
+                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-500 hover:shadow-md cursor-pointer"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-2xl">
+                  {cat.icon}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">{cat.name}</h3>
+                  <p className="text-xs text-slate-500">{cat.count}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURED PRODUCTS SECTION */}
+      <section id="products" className="bg-white px-6 py-12 border-t border-slate-200">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wider text-emerald-600">
+                Direct Supplier Inventory
+              </p>
+              <h2 className="mt-1 text-3xl font-bold text-slate-900">
+                Trending Security Equipment
+              </h2>
+            </div>
+
+            <a
+              href="/products"
+              className="font-bold text-emerald-600 transition hover:text-emerald-700"
+            >
+              View All Products &rarr;
+            </a>
+          </div>
+
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition hover:shadow-md"
+              >
+                <div className="flex h-44 items-center justify-center bg-slate-200 text-slate-400">
+                  <span className="text-xs font-semibold">[ Camera Image ]</span>
+                </div>
+
+                <div className="p-5 bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-emerald-600">
+                      {product.category}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600">
+                      {product.badge}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-2 text-base font-bold text-slate-900 line-clamp-2">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3">
+                    <p className="text-lg font-bold text-slate-900">
+                      {product.price}
+                    </p>
+                    <a
+                      href={`/products/${product.id}`}
+                      className="rounded-lg bg-[#0B192C] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-600"
+                    >
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* B2B RESELLER BANNER */}
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl bg-emerald-900 px-8 py-12 text-white shadow-xl lg:px-12">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-extrabold sm:text-4xl">
+              Want to sell security hardware in Rwanda?
+            </h2>
+            <p className="mt-4 text-emerald-100 leading-relaxed">
+              Open a reseller store without holding inventory. Choose products from BONFILS wholesale catalog, set your own selling prices, and earn profit on every sale.
+            </p>
+            <div className="mt-8">
+              <a
+                href="/merchant"
+                className="rounded-xl bg-white px-6 py-3.5 font-bold text-emerald-900 transition hover:bg-emerald-50"
+              >
+                Start Reselling Now
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

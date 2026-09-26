@@ -1,0 +1,123 @@
+// use prisma-8
+
+enum UserRole {
+  ADMIN
+  MERCHANT
+  BUYER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String
+  name         String
+  phone        String?
+  role         UserRole @default(BUYER)
+
+  merchant     Merchant?
+  orders       Order[]
+
+  createdAt    TimestamptzString @default(now())
+  updatedAt    temporal.updatedAtString()
+}
+
+model Merchant {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  storeName    String
+  storeSlug    String   @unique
+  description  String?
+  logo         String?
+
+  user         User     @relation(fields: [userId], references: [id])
+  listings     MerchantProduct[]
+  orders       Order[]
+
+  createdAt    TimestamptzString @default(now())
+  updatedAt    temporal.updatedAtString()
+}
+
+model Category {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  slug         String   @unique
+
+  products     Product[]
+
+  createdAt    TimestamptzString @default(now())
+}
+
+model Product {
+  id             Int      @id @default(autoincrement())
+  name           String
+  slug           String   @unique
+  description    String?
+  price          Float
+  stock          Int      @default(0)
+  image          String?
+  resolution     String?
+  nightVision    Boolean  @default(false)
+  isFeatured     Boolean  @default(false)
+
+  categoryId     Int?
+  category       Category? @relation(fields: [categoryId], references: [id])
+
+  listings       MerchantProduct[]
+  orderItems     OrderItem[]
+
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
+}
+
+model MerchantProduct {
+  id             Int      @id @default(autoincrement())
+  merchantId     Int
+  productId      Int
+  sellingPrice   Float
+  isActive       Boolean  @default(true)
+
+  merchant       Merchant @relation(fields: [merchantId], references: [id])
+  product        Product  @relation(fields: [productId], references: [id])
+
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
+
+  @@unique([merchantId, productId])
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  buyerId        Int
+  merchantId     Int?
+  total          Float
+  status         OrderStatus @default(PENDING)
+
+  buyer          User        @relation(fields: [buyerId], references: [id])
+  merchant       Merchant?   @relation(fields: [merchantId], references: [id])
+  items          OrderItem[]
+
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
+}
+
+model OrderItem {
+  id             Int      @id @default(autoincrement())
+  orderId        Int
+  productId      Int
+  quantity       Int
+  price          Float
+
+  order          Order    @relation(fields: [orderId], references: [id])
+  product        Product  @relation(fields: [productId], references: [id])
+
+  createdAt      TimestamptzString @default(now())
+}
