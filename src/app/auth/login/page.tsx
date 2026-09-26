@@ -2,25 +2,25 @@
 
 import Header from "@/components/layout/Header";
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [accountType, setAccountType] = useState<"BUYER" | "MERCHANT">("MERCHANT");
+  const [accountType, setAccountType] = useState<"MERCHANT" | "BUYER">("MERCHANT");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   // Handle Login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);
+
+    const targetRedirect = accountType === "MERCHANT" ? "/merchant" : "/";
 
     try {
       const res = await signIn("credentials", {
@@ -31,35 +31,24 @@ export default function LoginPage() {
 
       if (res?.error) {
         setErrorMsg("Email cyangwa Password ntabwo ari zo. Reba neza credentials zawe.");
+        setLoading(false);
       } else {
-        const session = await getSession();
-        const role = (session?.user as any)?.role;
-
-        if (role === "ADMIN") {
-          router.push("/admin");
-        } else if (role === "MERCHANT") {
-          router.push("/merchant");
-        } else {
-          router.push("/");
-        }
-        router.refresh();
+        // Redirection ikora nka lightning ⚡
+        window.location.href = targetRedirect;
       }
     } catch (err) {
       setErrorMsg("Ikosa ryabaye mu kwinjira. Gerageza tena.");
-    } finally {
       setLoading(false);
     }
   };
 
-  // Handle Password Reset Request
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulation / Direct Reset Notification
     setTimeout(() => {
       setResetSuccess(true);
       setLoading(false);
-    }, 1000);
+    }, 800);
   };
 
   return (
@@ -68,13 +57,12 @@ export default function LoginPage() {
 
       <section className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
-          {/* HEADER TOGGLE */}
           <div className="text-center">
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
-              BONFILS MARKETPLACE ACCESS
+              BONFILS PORTAL ACCESS
             </span>
             <h1 className="mt-3 text-2xl font-black text-slate-900">
-              {isForgotPassword ? "Reset Password" : "Sign In to Platform"}
+              {isForgotPassword ? "Reset Password" : "Sign In to Account"}
             </h1>
           </div>
 
@@ -85,20 +73,20 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setAccountType("MERCHANT")}
-                  className={`w-1/2 rounded-lg py-2 text-xs font-bold transition ${
+                  className={`w-1/2 rounded-lg py-2.5 text-xs font-extrabold transition ${
                     accountType === "MERCHANT"
-                      ? "bg-emerald-600 text-white shadow-sm"
+                      ? "bg-emerald-600 text-white shadow-md"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Reseller / Supplier
+                  Reseller / Merchant
                 </button>
                 <button
                   type="button"
                   onClick={() => setAccountType("BUYER")}
-                  className={`w-1/2 rounded-lg py-2 text-xs font-bold transition ${
+                  className={`w-1/2 rounded-lg py-2.5 text-xs font-extrabold transition ${
                     accountType === "BUYER"
-                      ? "bg-emerald-600 text-white shadow-sm"
+                      ? "bg-emerald-600 text-white shadow-md"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -120,7 +108,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@bonfils.rw"
+                    placeholder={accountType === "MERCHANT" ? "reseller@bonfils.rw" : "buyer@gmail.com"}
                     className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -149,7 +137,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-extrabold text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50"
                 >
                   {loading ? "Authenticating..." : `Sign In as ${accountType}`}
                 </button>
@@ -163,7 +151,6 @@ export default function LoginPage() {
               </div>
             </>
           ) : (
-            /* FORGOT PASSWORD FORM */
             <div className="mt-6">
               {resetSuccess ? (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center text-xs font-bold text-emerald-800">
