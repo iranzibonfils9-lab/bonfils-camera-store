@@ -1,45 +1,51 @@
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MERCHANT
+  BUYER
+}
+
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   name      String
   email     String   @unique
-  phone     String?
+  phone     String
   password  String
-  role      String   @default("BUYER") // ADMIN, MERCHANT, BUYER
+  role      Role     @default(BUYER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  store            Store?
-  orders           Order[]
-  sourcingRequests ChinaSourcingRequest[]
+  store  Store?
+  orders Order[]
 }
 
 model Store {
-  id          String   @id @default(uuid())
+  id          String   @id @default(cuid())
   storeName   String
   slug        String   @unique
+  description String?
   location    String?
   phone       String?
-  description String?
-  merchantId  String   @unique
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  merchant         User                   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  merchantId String @unique
+  merchant   User   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
   merchantProducts MerchantProduct[]
   orders           Order[]
-  sourcingRequests ChinaSourcingRequest[]
 }
 
 model Product {
-  id              String   @id @default(uuid())
+  id              String   @id @default(cuid())
   sku             String   @unique
   name            String
   category        String
@@ -48,7 +54,6 @@ model Product {
   wholesalePrice  Float
   suggestedRetail Float
   stockQuantity   Int      @default(0)
-  imageUrl        String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -57,62 +62,43 @@ model Product {
 }
 
 model MerchantProduct {
-  id          String   @id @default(uuid())
-  storeId     String
-  productId   String
+  id          String   @id @default(cuid())
   retailPrice Float
-  isListed    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId   String
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([storeId, productId])
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  buyerId         String
-  storeId         String
-  totalRetail     Float
-  totalWholesale  Float
-  netProfit       Float
-  status          String      @default("PENDING")
-  paymentMethod   String      @default("MOMO")
+  id              String   @id @default(cuid())
   customerName    String
   customerPhone   String
   deliveryAddress String
-  createdAt       DateTime    @default(now())
+  totalAmount     Float
+  netProfit       Float    @default(0)
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
 
-  buyer User        @relation(fields: [buyerId], references: [id])
-  store Store       @relation(fields: [storeId], references: [id])
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
+  storeId String?
+  store   Store?  @relation(fields: [storeId], references: [id])
+
   items OrderItem[]
 }
 
 model OrderItem {
-  id             String @id @default(uuid())
-  orderId        String
-  productId      String
-  quantity       Int
-  retailPrice    Float
-  wholesalePrice Float
+  id        String @id @default(cuid())
+  quantity  Int
+  unitPrice Float
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
-}
-
-model ChinaSourcingRequest {
-  id            String   @id @default(uuid())
-  userId        String
-  storeId       String?
-  productName   String
-  category      String
-  quantity      Int
-  targetPrice   Float?
-  notes         String?
-  status        String   @default("SUBMITTED") // SUBMITTED, QUOTED, IN_TRANSIT, DELIVERED
-  createdAt     DateTime @default(now())
-
-  user  User   @relation(fields: [userId], references: [id])
-  store Store? @relation(fields: [storeId], references: [id])
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
 }
