@@ -5,15 +5,15 @@ import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-interface Props {
-  params: {
-    slug: string;
-  };
-}
+export default async function ResellerPublicStorefront({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
 
-export default async function ResellerPublicStorefront({ params }: Props) {
   const store = await prisma.store.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       merchantProducts: {
         include: { product: true },
@@ -29,7 +29,6 @@ export default async function ResellerPublicStorefront({ params }: Props) {
     <main className="min-h-screen bg-slate-50 pb-16">
       <Header />
 
-      {/* ALIBABA STYLE BRANDING BANNER */}
       <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 px-6 py-12 text-white">
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -41,9 +40,6 @@ export default async function ResellerPublicStorefront({ params }: Props) {
                 <span className="rounded-full bg-emerald-500/30 px-3 py-0.5 text-[11px] font-black text-emerald-300 uppercase tracking-wider">
                   GOLD SUPPLIER • VERIFIED
                 </span>
-                <span className="rounded-full bg-amber-500/30 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
-                  ★ 4.9 Rating
-                </span>
               </div>
               <h1 className="mt-1 text-3xl font-black">{store.storeName}</h1>
               <p className="text-xs text-slate-300 mt-0.5">
@@ -52,7 +48,7 @@ export default async function ResellerPublicStorefront({ params }: Props) {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div>
             <a
               href={`https://wa.me/250${store.phone?.replace(/^0/, "")}`}
               target="_blank"
@@ -64,16 +60,7 @@ export default async function ResellerPublicStorefront({ params }: Props) {
         </div>
       </section>
 
-      {/* STORE DESCRIPTION & CATALOG */}
       <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm mb-10">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">About Vendor Store</h3>
-          <p className="mt-1 text-xs text-slate-700 leading-relaxed">
-            {store.description ||
-              "Official verified reseller store offering top-tier security systems, PTZ CCTV cameras, and DVR equipment at Kigali Downtown."}
-          </p>
-        </div>
-
         <h2 className="text-xl font-black text-slate-900 mb-6">
           Store Catalog ({store.merchantProducts.length} Items)
         </h2>
@@ -94,9 +81,6 @@ export default async function ResellerPublicStorefront({ params }: Props) {
                     {product.category}
                   </span>
                   <h3 className="mt-2 font-bold text-slate-900 text-base">{product.name}</h3>
-                  <p className="mt-1 text-xs text-slate-500 line-clamp-2">
-                    {product.description || "Quality security equipment."}
-                  </p>
                 </div>
 
                 <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-between">

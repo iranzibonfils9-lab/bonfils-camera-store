@@ -18,7 +18,6 @@ export default async function PublicStoresPage() {
     <main className="min-h-screen bg-slate-50 pb-16">
       <Header />
 
-      {/* HERO BANNER */}
       <section className="bg-slate-900 py-12 px-6 text-white text-center">
         <div className="mx-auto max-w-4xl">
           <span className="rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs font-extrabold text-emerald-400 uppercase tracking-widest">
@@ -28,12 +27,11 @@ export default async function PublicStoresPage() {
             Explore Reseller Stores at Kigali Downtown Tropical Plaza
           </h1>
           <p className="mt-2 text-xs text-slate-300">
-            Sura amaduka agurisha CCTV cameras n'ibikoresho by'umutekano uducuruzi muri Kigali.
+            Sura amaduka agurisha CCTV cameras n'ibikoresho by'umutekano muri Kigali.
           </p>
         </div>
       </section>
 
-      {/* STORES GRID */}
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {stores.map((s) => (
@@ -46,13 +44,13 @@ export default async function PublicStoresPage() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-xl shadow-md">
                     {s.storeName.charAt(0)}
                   </div>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-800 flex items-center gap-1">
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-800">
                     ✓ Verified Gold Supplier
                   </span>
                 </div>
 
                 <h2 className="mt-4 text-xl font-black text-slate-900">{s.storeName}</h2>
-                <p className="mt-1 text-xs font-bold text-slate-500 flex items-center gap-1">
+                <p className="mt-1 text-xs font-bold text-slate-500">
                   📍 {s.location || "Tropical Plaza, Kigali Downtown"}
                 </p>
 
