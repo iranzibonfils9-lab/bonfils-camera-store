@@ -1,166 +1,252 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import { useState } from "react";
 import Header from "@/components/layout/Header";
+import prisma from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
-export default function CartPage() {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: "prod-1",
-      name: "Hikvision 4MP Outdoor PTZ Camera",
-      price: 80000,
-      quantity: 1,
-      merchantStore: "BONFILS CAMERA - Tropical Branch",
-    },
-    {
-      id: "prod-2",
-      name: "Dahua 8-Channel DVR System",
-      price: 135000,
-      quantity: 1,
-      merchantStore: "BONFILS CAMERA - Tropical Branch",
-    },
-  ]);
+export default async function CartAndCheckoutPage() {
+  // Fetch sample active item from Central Stock to demonstrate live checkout
+  const featuredProduct = await prisma.product.findFirst({
+    where: { stockQuantity: { gt: 0 } },
+  });
 
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
-  const deliveryFee = 2000; // RWF Kigali Delivery
-  const grandTotal = subtotal + deliveryFee;
+  const activeStore = await prisma.store.findFirst();
+  const sampleBuyer = await prisma.user.findFirst({
+    where: { role: "BUYER" },
+  });
 
-  const updateQuantity = (id: string, delta: number) => {
-    setCartItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const newQty = Math.max(1, item.quantity + delta);
-          return { ...item, quantity: newQty };
-        }
-        return item;
-      })
-    );
-  };
+  // Server Action: Process Checkout & Deduct Stock in Real-Time
+  async function processOrder(formData: FormData) {
+    "use server";
 
-  const removeItem = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
+    const customerName = formData.get("customerName") as string;
+    const customerPhone = formData.get("customerPhone") as string;
+    const deliveryAddress = formData.get("deliveryAddress") as string;
+    const paymentMethod = formData.get("paymentMethod") as string;
+    const productId = formData.get("productId") as string;
+    const storeId = formData.get("storeId") as string;
+    const buyerId = formData.get("buyerId") as string;
+
+    if (!customerName || !customerPhone || !deliveryAddress || !productId) return;
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product || product.stockQuantity < 1) return;
+
+    const retailPrice = product.suggestedRetail;
+    const wholesalePrice = product.wholesalePrice;
+    const netProfit = retailPrice - wholesalePrice;
+
+    // 1. Create Order in DB
+    await prisma.order.create({
+      data: {
+        buyerId: buyerId || (await prisma.user.findFirst({ where: { role: "BUYER" } }))!.id,
+        storeId: storeId || (await prisma.store.findFirst())!.id,
+        totalRetail: retailPrice,
+        totalWholesale: wholesalePrice,
+        netProfit: netProfit,
+        status: "PENDING",
+        paymentMethod: paymentMethod || "MOMO",
+        customerName,
+        customerPhone,
+        deliveryAddress,
+        items: {
+          create: {
+            productId: product.id,
+            quantity: 1,
+            retailPrice: retailPrice,
+            wholesalePrice: wholesalePrice,
+          },
+        },
+      },
+    });
+
+    // 2. Reduce Stock in Database
+    await prisma.product.update({
+      where: { id: product.id },
+      data: {
+        stockQuantity: {
+          decrement: 1,
+        },
+      },
+    });
+
+    revalidatePath("/cart");
+    revalidatePath("/products");
+    revalidatePath("/admin/inventory");
+    revalidatePath("/merchant/orders");
+
+    redirect("/products?orderSuccess=true");
+  }
+
+  const deliveryFee = 3000;
+  const itemPrice = featuredProduct?.suggestedRetail || 85000;
+  const grandTotal = itemPrice + deliveryFee;
 
   return (
     <main className="min-h-screen bg-slate-50">
       <Header />
 
+      {/* HEADER SECTION */}
       <section className="border-b border-slate-200 bg-white px-6 py-8">
         <div className="mx-auto max-w-7xl">
-          <h1 className="text-3xl font-extrabold text-slate-900">
-            Shopping Cart
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Review your selected surveillance hardware before checkout.
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600">
+            BONFILS MARKETPLACE
           </p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-900 md:text-4xl">
+            Shopping Cart & Checkout
+          </h1>
         </div>
       </section>
 
+      {/* MAIN CHECKOUT FORM */}
       <section className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
-          {cartItems.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-              <p className="text-lg font-bold text-slate-700">
-                Your cart is currently empty.
-              </p>
-              <a
-                href="/products"
-                className="mt-4 inline-block rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
-              >
-                Browse Equipment Catalog
-              </a>
-            </div>
-          ) : (
-            <div className="grid gap-8 lg:grid-cols-3">
-              {/* ITEM LIST */}
-              <div className="space-y-4 lg:col-span-2">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center"
-                  >
+          <form action={processOrder} className="grid gap-10 lg:grid-cols-12">
+            <input type="hidden" name="productId" value={featuredProduct?.id || ""} />
+            <input type="hidden" name="storeId" value={activeStore?.id || ""} />
+            <input type="hidden" name="buyerId" value={sampleBuyer?.id || ""} />
+
+            {/* LEFT: ORDER ITEMS & CUSTOMER DETAILS (8 COLS) */}
+            <div className="space-y-8 lg:col-span-8">
+              {/* SELECTED ITEM */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-slate-900">Order Summary</h2>
+
+                <div className="mt-6 divide-y divide-slate-100">
+                  <div className="flex flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center">
                     <div>
-                      <span className="text-xs font-semibold text-emerald-600">
-                        Merchant: {item.merchantStore}
-                      </span>
-                      <h3 className="text-base font-bold text-slate-900">
-                        {item.name}
+                      <h3 className="font-bold text-slate-900">
+                        {featuredProduct?.name || "Hikvision 4MP Outdoor PTZ Camera"}
                       </h3>
-                      <p className="mt-1 font-extrabold text-slate-900">
-                        {item.price.toLocaleString()} RWF
+                      <p className="text-xs text-slate-500">
+                        Merchant Store:{" "}
+                        <span className="font-semibold text-emerald-600">
+                          {activeStore?.storeName || "BONFILS CAMERA - Tropical Branch"}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-sm font-extrabold text-slate-900">
+                        {itemPrice.toLocaleString()} RWF
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-6 sm:justify-end">
-                      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-1">
-                        <button
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white font-bold text-slate-700 shadow-sm"
-                        >
-                          -
-                        </button>
-                        <span className="w-6 text-center text-sm font-bold text-slate-900">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white font-bold text-slate-700 shadow-sm"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-xs font-bold text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 w-fit">
+                      Qty: 1
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
 
-              {/* ORDER SUMMARY */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
-                <h2 className="text-lg font-bold text-slate-900">
-                  Order Summary
-                </h2>
+              {/* DELIVERY DETAILS */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-slate-900">Delivery Details</h2>
 
-                <div className="mt-4 space-y-3 border-b border-slate-100 pb-4 text-sm">
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700">Full Name</label>
+                    <input
+                      type="text"
+                      name="customerName"
+                      required
+                      placeholder="e.g. Iranzi Bonfils"
+                      className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700">
+                      Phone Number (MoMo Registered)
+                    </label>
+                    <input
+                      type="text"
+                      name="customerPhone"
+                      required
+                      placeholder="078 XXX XXXX"
+                      className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Delivery Address / Location
+                    </label>
+                    <input
+                      type="text"
+                      name="deliveryAddress"
+                      required
+                      placeholder="e.g. Kigali downtown, Tropical Plaza Store #12"
+                      className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT: PAYMENT SUMMARY (4 COLS) */}
+            <div className="lg:col-span-4">
+              <div className="sticky top-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-slate-900">Payment Summary</h2>
+
+                <div className="mt-6 space-y-3 border-b border-slate-100 pb-4 text-sm">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal</span>
                     <span className="font-bold text-slate-900">
-                      {subtotal.toLocaleString()} RWF
+                      {itemPrice.toLocaleString()} RWF
                     </span>
                   </div>
+
                   <div className="flex justify-between text-slate-600">
-                    <span>Delivery Fee (Kigali)</span>
+                    <span>Standard Kigali Delivery</span>
                     <span className="font-bold text-slate-900">
                       {deliveryFee.toLocaleString()} RWF
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-between text-base font-extrabold text-slate-900">
+                <div className="mt-4 flex justify-between text-lg font-extrabold text-slate-900">
                   <span>Total Amount</span>
-                  <span className="text-emerald-600">
-                    {grandTotal.toLocaleString()} RWF
-                  </span>
+                  <span className="text-emerald-600">{grandTotal.toLocaleString()} RWF</span>
                 </div>
 
-                <a
-                  href="/checkout"
-                  className="mt-6 block w-full rounded-xl bg-emerald-600 py-3.5 text-center font-bold text-white shadow-md transition hover:bg-emerald-700"
+                {/* PAYMENT METHOD SELECTION */}
+                <div className="mt-6">
+                  <label className="block text-xs font-bold text-slate-700">Payment Method</label>
+                  <div className="mt-2 space-y-2">
+                    <label className="flex items-center gap-3 rounded-xl border border-emerald-500 bg-emerald-50/50 p-3 text-xs font-bold text-slate-900 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="MOMO"
+                        defaultChecked
+                        className="accent-emerald-600"
+                      />
+                      <span>MTN MoMo Direct Checkout</span>
+                    </label>
+
+                    <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="CASH"
+                        className="accent-emerald-600"
+                      />
+                      <span>Pay on Delivery / Pickup at Store</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-8 w-full rounded-xl bg-emerald-600 py-4 font-bold text-white shadow-md transition hover:bg-emerald-700"
                 >
-                  Proceed to Checkout
-                </a>
+                  Confirm & Pay Order
+                </button>
               </div>
             </div>
-          )}
+          </form>
         </div>
       </section>
     </main>
