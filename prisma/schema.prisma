@@ -15,6 +15,14 @@ enum Role {
   BUYER
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -36,6 +44,7 @@ model Store {
   description String?
   location    String?
   phone       String?
+  isBlocked   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -53,9 +62,11 @@ model Product {
   category        String
   brand           String
   description     String?
-  wholesalePrice  Float
+  wholesalePrice  Float    @default(0)
   suggestedRetail Float
   stockQuantity   Int      @default(0)
+  imageUrl        String?
+  isCustomMerchantProduct Boolean @default(false) // True niba ari stock y'umucuruzi ubwe
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -66,6 +77,7 @@ model Product {
 model MerchantProduct {
   id          String   @id @default(cuid())
   retailPrice Float
+  isListed    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   storeId   String
@@ -77,27 +89,29 @@ model MerchantProduct {
 }
 
 model Order {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   customerName    String
   customerPhone   String
   deliveryAddress String
   totalAmount     Float
-  netProfit       Float    @default(0)
-  status          String   @default("PENDING")
-  createdAt       DateTime @default(now())
+  netProfit       Float       @default(0)
+  status          OrderStatus @default(PENDING)
+  paymentMethod   String      @default("MOMO")
+  createdAt       DateTime    @default(now())
 
-  userId  String?
-  user    User?   @relation(fields: [userId], references: [id])
+  buyerId String?
+  buyer   User?   @relation(fields: [buyerId], references: [id], onDelete: SetNull)
   storeId String?
-  store   Store?  @relation(fields: [storeId], references: [id])
+  store   Store?  @relation(fields: [storeId], references: [id], onDelete: SetNull)
 
   items OrderItem[]
 }
 
 model OrderItem {
-  id        String @id @default(cuid())
-  quantity  Int
-  unitPrice Float
+  id             String @id @default(cuid())
+  quantity       Int
+  retailPrice    Float
+  wholesalePrice Float
 
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
