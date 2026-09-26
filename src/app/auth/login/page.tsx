@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@bonfils.rw");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +27,18 @@ export default function LoginPage() {
       if (res?.error) {
         setErrorMsg("Email cyangwa password sio byo. Reba neza credentials zawe.");
       } else {
-        router.push("/admin");
+        // Fetch session status to redirect based on role
+        const sessionRes = await fetch("/api/auth/session");
+        const sessionData = await sessionRes.json();
+        const role = sessionData?.user?.role;
+
+        if (role === "ADMIN") {
+          router.push("/admin");
+        } else if (role === "MERCHANT") {
+          router.push("/merchant");
+        } else {
+          router.push("/products");
+        }
         router.refresh();
       }
     } catch (err) {
@@ -51,7 +62,7 @@ export default function LoginPage() {
               Sign In to Your Account
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Enter your credentials to access Admin, Merchant, or Buyer portal.
+              Enter your credentials to access your account.
             </p>
           </div>
 
@@ -67,6 +78,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
@@ -78,6 +90,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
@@ -93,10 +106,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 rounded-xl bg-slate-50 p-4 text-xs space-y-1">
-            <p className="font-bold text-slate-700">Quick Portal Demo Accounts:</p>
-            <p className="text-slate-600"><span className="font-bold text-emerald-600">Admin:</span> admin@bonfils.rw / admin123</p>
-            <p className="text-slate-600"><span className="font-bold text-emerald-600">Merchant:</span> merchant@bonfils.rw / merchant123</p>
+          <div className="mt-6 text-center text-xs text-slate-600">
+            Nturagira account?{" "}
+            <a href="/auth/register" className="font-bold text-emerald-600 hover:underline">
+              Kora Register (Signup) Hano
+            </a>
           </div>
         </div>
       </section>

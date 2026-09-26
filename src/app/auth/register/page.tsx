@@ -6,36 +6,38 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [role, setRole] = useState<"BUYER" | "MERCHANT">("BUYER");
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    storeName: "",
-  });
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("BUYER");
+  const [storeName, setStoreName] = useState("");
+  
+  const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
     setLoading(true);
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, role }),
+        body: JSON.stringify({ name, email, phone, password, role, storeName }),
       });
 
       const data = await res.json();
-      if (data.success) {
-        alert("🎉 Account yaremwe neza! Hitamo kwinjira (Login).");
-        router.push("/auth/login");
+
+      if (!res.ok) {
+        setErrorMsg(data.error || "Regsitration failed");
       } else {
-        alert("Error: " + data.error);
+        // Redirect to login page after successful registration
+        router.push("/auth/login?registered=true");
       }
-    } catch (err: any) {
-      alert("Registration failed.");
+    } catch (err) {
+      setErrorMsg("Connection error. Try again.");
     } finally {
       setLoading(false);
     }
@@ -45,54 +47,48 @@ export default function RegisterPage() {
     <main className="min-h-screen bg-slate-50">
       <Header />
 
-      <section className="px-6 py-12">
-        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">
-            BONFILS CAMERA STORE
-          </p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">
-            Create Your Account
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Select your account type to register on the platform.
-          </p>
-
-          {/* ROLE SELECTOR */}
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setRole("BUYER")}
-              className={`rounded-xl border py-3 text-sm font-bold transition ${
-                role === "BUYER"
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 text-slate-600"
-              }`}
-            >
-              🛒 Buyer / Retail Customer
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole("MERCHANT")}
-              className={`rounded-xl border py-3 text-sm font-bold transition ${
-                role === "MERCHANT"
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 text-slate-600"
-              }`}
-            >
-              🏪 Merchant / Reseller
-            </button>
+      <section className="flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="text-center">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
+              CREATE NEW ACCOUNT
+            </span>
+            <h1 className="mt-3 text-2xl font-bold text-slate-900">
+              Join BONFILS Platform
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Select your role and create an account to get started.
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {errorMsg && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600 text-center">
+              {errorMsg}
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="mt-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700">Account Type (Role)</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="BUYER">Buyer / Customer</option>
+                <option value="MERCHANT">Reseller / Seller Store</option>
+                <option value="ADMIN">System Administrator</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-700">Full Name</label>
               <input
                 type="text"
                 required
-                placeholder="Iranzi Bonfils"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Iranzi Bonfils"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
               />
             </div>
@@ -103,34 +99,34 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   required
-                  placeholder="BONFILS CAMERA - Tropical Plaza"
-                  value={formData.storeName}
-                  onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+                  placeholder="e.g. Bonfils Electronics Kigali"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-emerald-400 bg-emerald-50/30 p-3 text-sm focus:border-emerald-600 focus:outline-none"
                 />
               </div>
             )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700">Phone Number</label>
+              <input
+                type="text"
+                required
+                placeholder="078 XXX XXXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700">Email Address</label>
               <input
                 type="email"
                 required
-                placeholder="iranzi@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700">Phone Number (MTN / Airtel)</label>
-              <input
-                type="text"
-                required
-                placeholder="078 XXX XXXX"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
               />
             </div>
@@ -141,8 +137,8 @@ export default function RegisterPage() {
                 type="password"
                 required
                 placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
               />
             </div>
@@ -150,18 +146,18 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-600 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
             >
-              {loading ? "Creating Account..." : `Register as ${role}`}
+              {loading ? "Creating Account..." : "Create Account & Sign In"}
             </button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-slate-500">
-            Already have an account?{" "}
+          <div className="mt-6 text-center text-xs text-slate-600">
+            Ufite account tayari?{" "}
             <a href="/auth/login" className="font-bold text-emerald-600 hover:underline">
-              Log In Here
+              Sign In Hano
             </a>
-          </p>
+          </div>
         </div>
       </section>
     </main>
