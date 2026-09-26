@@ -1,10 +1,24 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MERCHANT
+  BUYER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }
 
 model User {
@@ -13,10 +27,11 @@ model User {
   email     String   @unique
   phone     String?
   password  String
-  role      String   @default("BUYER")
+  role      Role     @default(BUYER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relationships
   store  Store?
   orders Order[]
 }
@@ -31,6 +46,7 @@ model Store {
   merchantId  String   @unique
   createdAt   DateTime @default(now())
 
+  // Relationships
   merchant         User              @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   merchantProducts MerchantProduct[]
   orders           Order[]
@@ -43,13 +59,14 @@ model Product {
   category        String
   brand           String
   description     String?
-  wholesalePrice  Float
-  suggestedRetail Float
+  wholesalePrice  Float    // Price charged by BONFILS supplier
+  suggestedRetail Float    // Suggested retail selling price
   stockQuantity   Int      @default(0)
   imageUrl        String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  // Relationships
   merchantProducts MerchantProduct[]
   orderItems       OrderItem[]
 }
@@ -58,10 +75,11 @@ model MerchantProduct {
   id          String   @id @default(uuid())
   storeId     String
   productId   String
-  retailPrice Float
+  retailPrice Float    // Custom price set by the merchant
   isListed    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
+  // Relationships
   store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -69,19 +87,20 @@ model MerchantProduct {
 }
 
 model Order {
-  id              String   @id @default(uuid())
+  id              String      @id @default(uuid())
   buyerId         String
   storeId         String
   totalRetail     Float
   totalWholesale  Float
-  netProfit       Float
-  status          String   @default("PENDING")
-  paymentMethod   String   @default("MOMO")
+  netProfit       Float       // Difference (Merchant profit)
+  status          OrderStatus @default(PENDING)
+  paymentMethod   String      @default("MOMO")
   customerName    String
   customerPhone   String
   deliveryAddress String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime    @default(now())
 
+  // Relationships
   buyer User        @relation(fields: [buyerId], references: [id])
   store Store       @relation(fields: [storeId], references: [id])
   items OrderItem[]
@@ -95,6 +114,7 @@ model OrderItem {
   retailPrice    Float
   wholesalePrice Float
 
+  // Relationships
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
 }
