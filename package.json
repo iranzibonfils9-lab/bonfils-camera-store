@@ -6,20 +6,23 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "fix-push": "npx prisma generate && git add . && git commit -m \"Update full-stack authentication, store actions, and China sourcing\" && git push origin main"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "autoprefixer": "^10.6.1",
-    "next": "15.0.3",
-    "next-auth": "^4.24.15",
+    "bcryptjs": "^2.4.3",
+    "next": "^15.1.7",
+    "next-auth": "^4.24.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.17.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.15",
@@ -27,6 +30,6 @@
     "typescript": "^5.6.3"
   },
   "prisma": {
-    "seed": "node prisma/seed.mjs"
+    "seed": "npx tsx prisma/seed.ts"
   }
 }
