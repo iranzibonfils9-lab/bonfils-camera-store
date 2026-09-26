@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
-import ws from "ws";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -14,13 +13,8 @@ function createPrismaClient() {
     return new PrismaClient();
   }
 
+  // Always use WebSocket Pool adapter for Neon to allow interactive transactions
   const pool = new Pool({ connectionString });
-  
-  // Assign WebSocket implementation for Neon adapter
-  if (process.env.NODE_ENV === "development") {
-    pool.ws = ws;
-  }
-
   const adapter = new PrismaNeon(pool);
 
   return new PrismaClient({ adapter });
