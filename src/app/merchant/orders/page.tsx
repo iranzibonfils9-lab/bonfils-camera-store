@@ -1,261 +1,151 @@
+export const dynamic = "force-dynamic";
+
 import Header from "@/components/layout/Header";
+import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
-const merchantOrders = [
-  {
-    id: "ORD-8921",
-    customerName: "Eric Manzi",
-    customerPhone: "078 812 3456",
-    productName: "Hikvision 4MP Outdoor PTZ Camera",
-    quantity: 2,
-    retailPrice: 80000, // Retail price set by merchant
-    wholesalePrice: 65000, // Wholesale price charged by BONFILS
-    orderDate: "25 Sep 2026",
-    status: "Delivered",
-    paymentStatus: "Paid",
-  },
-  {
-    id: "ORD-8910",
-    customerName: "Kigali Tech Office",
-    customerPhone: "079 123 4567",
-    productName: "Dahua 8-Channel DVR System",
-    quantity: 1,
-    retailPrice: 135000,
-    wholesalePrice: 110000,
-    orderDate: "24 Sep 2026",
-    status: "Processing",
-    paymentStatus: "Paid",
-  },
-  {
-    id: "ORD-8895",
-    customerName: "Aline Umuhoza",
-    customerPhone: "072 987 6543",
-    productName: "Wireless Solar Security Camera 4G",
-    quantity: 1,
-    retailPrice: 115000,
-    wholesalePrice: 90000,
-    orderDate: "22 Sep 2026",
-    status: "Pending",
-    paymentStatus: "Unpaid",
-  },
-];
+export default async function MerchantOrdersPage() {
+  const merchantStore = await prisma.store.findFirst();
 
-export default function MerchantOrdersPage() {
+  const orders = await prisma.order.findMany({
+    where: { storeId: merchantStore?.id },
+    include: {
+      items: {
+        include: { product: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Server Action: Update Order Status
+  async function updateOrderStatus(formData: FormData) {
+    "use server";
+
+    const orderId = formData.get("orderId") as string;
+    const newStatus = formData.get("status") as string;
+
+    if (!orderId || !newStatus) return;
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: newStatus },
+    });
+
+    revalidatePath("/merchant/orders");
+    revalidatePath("/admin/orders");
+  }
+
+  const totalEarnings = orders.reduce((acc, order) => acc + order.netProfit, 0);
+
   return (
     <main className="min-h-screen bg-slate-50">
       <Header />
 
-      {/* HEADER SECTION */}
-      <section className="border-b border-slate-200 bg-white px-6 py-10">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600">
-            BONFILS MERCHANT
-          </p>
-
-          <div className="mt-3 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 md:text-4xl">
-                Customer Orders
-              </h1>
-              <p className="mt-2 max-w-2xl text-slate-600">
-                Track and manage orders placed through your reseller storefront.
-              </p>
-            </div>
-
-            <a
-              href="/merchant"
-              className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:border-emerald-400 hover:text-emerald-600"
-            >
-              Back to Dashboard
-            </a>
+      <section className="border-b border-slate-200 bg-white px-6 py-8">
+        <div className="mx-auto max-w-7xl flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600">
+              BONFILS MERCHANT PORTAL
+            </p>
+            <h1 className="mt-1 text-3xl font-extrabold text-slate-900">
+              Customer Orders
+            </h1>
           </div>
+
+          <a
+            href="/merchant"
+            className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-emerald-500"
+          >
+            &larr; Back to Dashboard
+          </a>
         </div>
       </section>
 
-      {/* MAIN CONTENT */}
       <section className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           {/* STATS OVERVIEW */}
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm text-slate-500">Total Orders</p>
-              <p className="mt-2 text-3xl font-bold text-[#0B192C]">
-                {merchantOrders.length}
-              </p>
+              <p className="text-xs font-bold text-slate-500">Total Orders Received</p>
+              <p className="mt-2 text-3xl font-extrabold text-slate-900">{orders.length}</p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm text-slate-500">Total Retail Sales</p>
-              <p className="mt-2 text-3xl font-bold text-emerald-600">
-                {merchantOrders
-                  .reduce(
-                    (total, order) =>
-                      total + order.retailPrice * order.quantity,
-                    0
-                  )
-                  .toLocaleString()}{" "}
-                RWF
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm text-slate-500">Estimated Total Profit</p>
-              <p className="mt-2 text-3xl font-bold text-blue-600">
-                {merchantOrders
-                  .reduce(
-                    (total, order) =>
-                      total +
-                      (order.retailPrice - order.wholesalePrice) *
-                        order.quantity,
-                    0
-                  )
-                  .toLocaleString()}{" "}
-                RWF
+              <p className="text-xs font-bold text-slate-500">Total Profit Earned</p>
+              <p className="mt-2 text-3xl font-extrabold text-emerald-600">
+                {totalEarnings.toLocaleString()} RWF
               </p>
             </div>
           </div>
 
-          {/* ORDERS TABLE */}
-          <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {/* ORDERS LIST */}
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="border-b border-slate-100 p-6">
-              <h2 className="text-2xl font-bold text-slate-900">
-                Recent Store Orders
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Orders fulfillment is handled directly by BONFILS central warehouse.
-              </p>
+              <h2 className="text-xl font-bold text-slate-900">Live Orders Directory</h2>
             </div>
 
-            {/* DESKTOP VIEW */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 text-sm text-slate-500">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold">Order ID</th>
-                    <th className="px-6 py-4 font-semibold">Customer</th>
-                    <th className="px-6 py-4 font-semibold">Product</th>
-                    <th className="px-6 py-4 font-semibold">Total Revenue</th>
-                    <th className="px-6 py-4 font-semibold">Your Profit</th>
-                    <th className="px-6 py-4 font-semibold">Status</th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100">
-                  {merchantOrders.map((order) => {
-                    const totalRevenue = order.retailPrice * order.quantity;
-                    const profit =
-                      (order.retailPrice - order.wholesalePrice) *
-                      order.quantity;
-
-                    return (
-                      <tr
-                        key={order.id}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="px-6 py-5 font-bold text-slate-900">
-                          {order.id}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <p className="font-semibold text-slate-900">
-                            {order.customerName}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {order.customerPhone}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-5 text-sm text-slate-700">
-                          {order.productName}{" "}
-                          <span className="font-bold">x{order.quantity}</span>
-                        </td>
-
-                        <td className="px-6 py-5 text-sm font-bold text-slate-900">
-                          {totalRevenue.toLocaleString()} RWF
-                        </td>
-
-                        <td className="px-6 py-5 text-sm font-bold text-emerald-600">
-                          +{profit.toLocaleString()} RWF
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-bold ${
-                              order.status === "Delivered"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : order.status === "Processing"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-amber-100 text-amber-800"
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* MOBILE VIEW */}
-            <div className="space-y-4 p-5 md:hidden">
-              {merchantOrders.map((order) => {
-                const totalRevenue = order.retailPrice * order.quantity;
-                const profit =
-                  (order.retailPrice - order.wholesalePrice) * order.quantity;
-
-                return (
-                  <div
-                    key={order.id}
-                    className="rounded-xl border border-slate-200 p-5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">
-                        {order.id}
-                      </span>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          order.status === "Delivered"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : order.status === "Processing"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                    </div>
-
-                    <div className="mt-3">
-                      <p className="font-semibold text-slate-900">
-                        {order.customerName}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {order.customerPhone}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-sm">
-                      <p className="text-slate-700">
-                        <span className="font-semibold">Item:</span>{" "}
-                        {order.productName} (x{order.quantity})
-                      </p>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Total:</span>
-                        <span className="font-bold">
-                          {totalRevenue.toLocaleString()} RWF
+            <div className="divide-y divide-slate-100">
+              {orders.length === 0 ? (
+                <div className="p-10 text-center text-slate-500 text-sm">
+                  No orders placed yet. Place an order from the Shopping Cart to test!
+                </div>
+              ) : (
+                orders.map((order) => (
+                  <div key={order.id} className="p-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-extrabold text-slate-900">
+                          Customer: {order.customerName}
+                        </span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                          {order.customerPhone}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Your Profit:</span>
-                        <span className="font-bold text-emerald-600">
-                          +{profit.toLocaleString()} RWF
-                        </span>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        Delivery Address: <span className="font-medium text-slate-800">{order.deliveryAddress}</span>
+                      </p>
+
+                      <div className="mt-3 text-xs text-slate-600 space-y-1">
+                        {order.items.map((item) => (
+                          <div key={item.id}>
+                            • <span className="font-bold">{item.product.name}</span> (Qty: {item.quantity})
+                          </div>
+                        ))}
                       </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <div className="text-right sm:text-left">
+                        <p className="text-xs text-slate-500">Your Net Profit</p>
+                        <p className="text-lg font-extrabold text-emerald-600">
+                          +{order.netProfit.toLocaleString()} RWF
+                        </p>
+                      </div>
+
+                      <form action={updateOrderStatus} className="flex items-center gap-2">
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <select
+                          name="status"
+                          defaultValue={order.status}
+                          className="rounded-xl border border-slate-300 p-2 text-xs font-bold focus:border-emerald-500 focus:outline-none"
+                        >
+                          <option value="PENDING">PENDING</option>
+                          <option value="SHIPPED">SHIPPED</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                        >
+                          Update
+                        </button>
+                      </form>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </div>
         </div>
