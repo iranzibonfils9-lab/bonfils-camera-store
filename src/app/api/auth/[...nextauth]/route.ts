@@ -16,14 +16,14 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: credentials.email.toLowerCase().trim() },
+          include: { store: true },
         });
 
         if (!user) {
           throw new Error("User not found");
         }
 
-        // Check password (simple match for demo seeding, hash verification in prod)
         if (user.password !== credentials.password) {
           throw new Error("Invalid password");
         }
@@ -33,6 +33,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          storeId: user.store?.id || null,
         };
       },
     }),
@@ -40,15 +41,17 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        token.role = (user as any).role;
         token.id = user.id;
+        token.storeId = (user as any).storeId;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role as string;
-        session.user.id = token.id as string;
+        (session.user as any).role = token.role;
+        (session.user as any).id = token.id;
+        (session.user as any).storeId = token.storeId;
       }
       return session;
     },
