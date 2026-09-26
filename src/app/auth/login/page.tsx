@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = Router = useRouter();
+  const router = useRouter();
   const [email, setEmail] = useState("admin@bonfils.rw");
   const [password, setPassword] = useState("admin123");
   const [errorMsg, setErrorMsg] = useState("");
