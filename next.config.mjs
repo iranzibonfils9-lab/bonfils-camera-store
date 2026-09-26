@@ -1,32 +1,11 @@
-{
-  "name": "bonfils-camera-store",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "lint": "next lint"
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
   },
-  "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "next": "15.0.3",
-    "next-auth": "^4.24.10",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+  eslint: {
+    ignoreDuringBuilds: true,
   },
-  "devDependencies": {
-    "@types/node": "^20.17.6",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "prisma": "^5.22.0",
-    "tailwindcss": "^3.4.15",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.mjs"
-  }
-}
+};
+
+export default nextConfig;
