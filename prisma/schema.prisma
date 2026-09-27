@@ -67,6 +67,7 @@ model Product {
 model MerchantProduct {
   id          String   @id @default(cuid())
   retailPrice Float
+  isListed    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   storeId   String

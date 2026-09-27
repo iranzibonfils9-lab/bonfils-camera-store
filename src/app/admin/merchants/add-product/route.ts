@@ -1,29 +1,35 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { productId, retailPrice } = body;
+    const body = await req.json();
+    const { productId, retailPrice, storeId } = body;
 
-    // Get default seed store (or dynamic logged in store)
-    const store = await prisma.store.findFirst({
-      where: { slug: "bonfils-tropical" },
-    });
+    if (!productId || !retailPrice) {
+      return NextResponse.json(
+        { error: "Product ID and Retail Price are required" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch primary reseller store if storeId is not provided
+    const store = storeId
+      ? await prisma.store.findUnique({ where: { id: storeId } })
+      : await prisma.store.findFirst();
 
     if (!store) {
       return NextResponse.json(
-        { error: "Merchant Store not found" },
+        { error: "No merchant store found" },
         { status: 404 }
       );
     }
 
-    // Upsert merchant product entry
     const merchantProduct = await prisma.merchantProduct.upsert({
       where: {
         storeId_productId: {
           storeId: store.id,
-          productId: productId,
+          productId,
         },
       },
       update: {
@@ -32,19 +38,19 @@ export async function POST(request: Request) {
       },
       create: {
         storeId: store.id,
-        productId: productId,
+        productId,
         retailPrice: parseFloat(retailPrice),
+        isListed: true,
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Product added to your store successfully!",
       merchantProduct,
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to add product" },
+      { error: error.message || "Failed to add product to store" },
       { status: 500 }
     );
   }
