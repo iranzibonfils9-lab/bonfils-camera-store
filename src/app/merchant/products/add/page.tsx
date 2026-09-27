@@ -10,7 +10,7 @@ export default async function MerchantAddProductPage() {
   const user = await getCurrentUser();
 
   if (!user || user.role !== "MERCHANT" || !user.store) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
   // SERVER ACTION: Add Custom Merchant Product
@@ -18,29 +18,28 @@ export default async function MerchantAddProductPage() {
     "use server";
     const name = formData.get("name") as string;
     const category = formData.get("category") as string;
-    const brand = formData.get("brand") as string;
+    const brand = (formData.get("brand") as string) || "Custom Brand";
     const retailPrice = parseFloat(formData.get("retailPrice") as string);
-    const stockQuantity = parseInt(formData.get("stockQuantity") as string);
+    const stockQuantity = parseInt(formData.get("stockQuantity") as string, 10);
     const description = formData.get("description") as string;
 
-    const sku = `CUSTOM-${Date.now()}`;
+    const sku = `CUSTOM-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
-    // 1. Create Product in Central Catalog as Custom
+    // 1. Create Product in Central Catalog
     const product = await prisma.product.create({
       data: {
         sku,
         name,
-        category,
         brand,
+        category,
         suggestedRetail: retailPrice,
-        wholesalePrice: 0, // Custom stock has no central wholesale price
+        wholesalePrice: 0,
         stockQuantity,
         description,
-        isCustomMerchantProduct: true,
       },
     });
 
-    // 2. Attach to Merchant Store
+    // 2. Attach to Merchant Store Catalog
     await prisma.merchantProduct.create({
       data: {
         storeId: user.store.id,
@@ -65,15 +64,14 @@ export default async function MerchantAddProductPage() {
       <div className="mx-auto max-w-3xl px-6 py-12">
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
           <div className="border-b border-slate-100 pb-6">
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wider">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
               MERCHANT INVENTORY CONTROL
             </span>
             <h1 className="mt-2 text-3xl font-extrabold text-slate-900">
               Add New Custom Product
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Products added here will immediately display on Homepage and Admin Catalog. 
-              <strong> 2% System Fee</strong> applies upon successful retail sale.
+              Products added here will immediately display on Homepage and Admin Catalog.
             </p>
           </div>
 
@@ -109,7 +107,6 @@ export default async function MerchantAddProductPage() {
                 <input
                   type="text"
                   name="brand"
-                  required
                   placeholder="e.g. Hikvision / Custom"
                   className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
                 />
