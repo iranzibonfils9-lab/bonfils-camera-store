@@ -2,7 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -12,30 +12,26 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Shyiramo email na password");
+          throw new Error("Missing credentials");
         }
 
-        const normalizedEmail = credentials.email.toLowerCase().trim();
-
         const user = await prisma.user.findUnique({
-          where: { email: normalizedEmail },
-          include: { store: true },
+          where: { email: credentials.email },
         });
 
         if (!user) {
-          throw new Error("Nta konti idafite iyi email kugaragara");
+          throw new Error("User not found");
         }
 
-        if (user.password !== credentials.password.trim()) {
-          throw new Error("Password ntabwo ari yo");
+        if (user.password !== credentials.password) {
+          throw new Error("Invalid password");
         }
 
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: String(user.role), // Admin, Merchant, cyangwa Buyer
-          storeId: user.store?.id || null,
+          role: user.role,
         };
       },
     }),
@@ -43,30 +39,26 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
         token.role = (user as any).role;
-        token.storeId = (user as any).storeId;
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).storeId = token.storeId;
+        (session.user as any).role = token.role as string;
+        (session.user as any).id = token.id as string;
       }
       return session;
     },
   },
   pages: {
     signIn: "/auth/login",
-    error: "/auth/login",
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 Days
   },
-  secret: process.env.NEXTAUTH_SECRET || "bonfils-camera-store-super-secret-key",
+  secret: process.env.NEXTAUTH_SECRET || "bonfils-super-secret-key-2026",
 };
 
 const handler = NextAuth(authOptions);
