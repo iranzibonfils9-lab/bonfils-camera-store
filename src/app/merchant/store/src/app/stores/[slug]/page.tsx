@@ -15,10 +15,7 @@ export default async function PublicStorefrontSlugPage({
 
   const store = await prisma.store.findFirst({
     where: {
-      OR: [
-        { slug: slug },
-        { id: slug },
-      ],
+      OR: [{ slug: slug }, { id: slug }],
     },
     include: {
       merchantProducts: {
@@ -37,7 +34,7 @@ export default async function PublicStorefrontSlugPage({
     <main className="min-h-screen bg-slate-50 pb-16">
       <Header />
 
-      {/* PRO STORE BANNER */}
+      {/* BANNER */}
       <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 px-6 py-12 text-white shadow-xl">
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -74,7 +71,7 @@ export default async function PublicStorefrontSlugPage({
         </div>
       </section>
 
-      {/* CATALOG DISPLAY */}
+      {/* CATALOG */}
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div className="flex justify-between items-center mb-6">
           <div>
