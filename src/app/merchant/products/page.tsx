@@ -4,149 +4,147 @@ import Header from "@/components/layout/Header";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { revalidatePath } from "next/cache";
 
-export default async function MerchantProductsPage() {
+export default async function MerchantProductsListPage() {
   const user = await getCurrentUser();
 
   if (!user || user.role !== "MERCHANT" || !user.store) {
     redirect("/auth/login");
   }
 
-  // Fetch all products associated with this Merchant's store
-  const merchantProducts = await prisma.merchantProduct.findMany({
+  // Fetch listed products for this reseller store
+  const storeProducts = await prisma.merchantProduct.findMany({
     where: { storeId: user.store.id },
     include: { product: true },
     orderBy: { createdAt: "desc" },
   });
 
-  // SERVER ACTION: Delete / Remove product listing
-  async function removeProduct(formData: FormData) {
+  // Server Action: Remove Product from Store Catalog
+  async function removeProductFromStore(formData: FormData) {
     "use server";
+
+    const actionUser = await getCurrentUser();
+    if (!actionUser || !actionUser.store) {
+      redirect("/auth/login");
+    }
+
     const productId = formData.get("productId") as string;
+    if (!productId) return;
 
     await prisma.merchantProduct.deleteMany({
       where: {
-        storeId: user.store.id,
+        storeId: actionUser.store.id,
         productId,
       },
     });
 
     revalidatePath("/merchant/products");
-    revalidatePath("/");
+    revalidatePath("/products");
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 pb-16">
       <Header />
 
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        {/* PAGE HEADER */}
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center mb-8">
+      <section className="border-b border-slate-200 bg-white px-6 py-8">
+        <div className="mx-auto max-w-7xl flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wider">
-              INVENTORY CATALOG • {user.store.storeName}
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
+              RESELLER CATALOG MANAGEMENT
             </span>
             <h1 className="mt-2 text-3xl font-black text-slate-900">
-              Products & Inventory Management
+              My Listed Store Products
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Ibicuruzwa ushyize hano bihita bigaragara kuri Homepage no kuri Admin Catalog ako kanya.
+              Manage items currently visible to retail customers under <span className="font-bold text-slate-900">{user.store.storeName}</span>.
             </p>
           </div>
 
           <div className="flex gap-3">
-            <Link
+            <a
               href="/merchant/products/add"
-              className="rounded-xl bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-md transition hover:bg-emerald-700"
+              className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition"
             >
-              + Add New Custom Product
-            </Link>
-            <Link
-              href="/merchant"
-              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs font-bold text-slate-700 hover:border-emerald-500"
-            >
-              &larr; Back to Dashboard
-            </Link>
+              + Publish Custom Product
+            </a>
           </div>
         </div>
+      </section>
 
-        {/* PRODUCTS TABLE / GRID */}
-        {merchantProducts.length === 0 ? (
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        {storeProducts.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-2xl">
-              📦
-            </div>
-            <h3 className="mt-4 text-lg font-bold text-slate-900">Nta gicuruzwa urashyiramo</h3>
+            <h2 className="text-lg font-bold text-slate-800">No Products in Your Reseller Catalog</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Kanda akabuto ka **"+ Add New Custom Product"** utangire gushyiraho ibicuruzwa bijya kuri Homepage.
+              Nta gicuruzwa urashyira muri Store yawe. Wifuza guhitamo ibiri muri Central Inventory cyangwa gupublisha ibyaguturiye?
             </p>
-            <Link
-              href="/merchant/products/add"
-              className="mt-6 inline-block rounded-xl bg-emerald-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
-            >
-              + Add First Product
-            </Link>
+            <div className="mt-6 flex justify-center gap-4">
+              <a
+                href="/products"
+                className="rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-bold text-slate-700 hover:border-emerald-500"
+              >
+                Browse Central Stock
+              </a>
+              <a
+                href="/merchant/products/add"
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700"
+              >
+                + Add Custom Product
+              </a>
+            </div>
           </div>
         ) : (
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-100 font-bold uppercase text-slate-600">
-                  <tr>
-                    <th className="p-4">Product Name & SKU</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4 text-right">Retail Price</th>
-                    <th className="p-4 text-center">Stock Quantity</th>
-                    <th className="p-4 text-center">Status</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {merchantProducts.map(({ product, retailPrice }) => (
-                    <tr key={product.id} className="hover:bg-slate-50 transition">
-                      <td className="p-4">
-                        <span className="font-extrabold text-slate-900 block text-sm">
-                          {product.name}
-                        </span>
-                        <span className="font-mono text-[10px] text-slate-400">
-                          SKU: {product.sku}
-                        </span>
-                      </td>
-                      <td className="p-4 text-slate-600 font-medium">{product.category}</td>
-                      <td className="p-4 text-right font-black text-emerald-600 text-sm">
-                        {retailPrice.toLocaleString()} RWF
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-800">
-                          {product.stockQuantity} pcs
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">
-                          Live on Homepage 🌐
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <form action={removeProduct} className="inline-block">
-                          <input type="hidden" name="productId" value={product.id} />
-                          <button
-                            type="submit"
-                            className="rounded-lg bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-600 hover:bg-red-100"
-                          >
-                            Remove
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {storeProducts.map((mp) => (
+              <div
+                key={mp.id}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 uppercase">
+                      {mp.product.category}
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Live on Marketplace
+                    </span>
+                  </div>
+
+                  <h3 className="mt-3 font-black text-slate-900 text-base">{mp.product.name}</h3>
+                  <p className="mt-1 text-xs text-slate-400 line-clamp-2">{mp.product.description}</p>
+
+                  <div className="mt-4 border-t border-slate-100 pt-3 flex justify-between items-center text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Your Selling Price</span>
+                      <span className="font-black text-slate-900 text-base">
+                        {mp.retailPrice.toLocaleString()} RWF
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-slate-400 block text-[10px]">Available Stock</span>
+                      <span className="font-bold text-slate-700">
+                        {mp.product.stockQuantity} units
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <form action={removeProductFromStore} className="mt-6 border-t border-slate-100 pt-4">
+                  <input type="hidden" name="productId" value={mp.productId} />
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100 transition"
+                  >
+                    Remove from My Store
+                  </button>
+                </form>
+              </div>
+            ))}
           </div>
         )}
-      </div>
+      </section>
     </main>
   );
 }
