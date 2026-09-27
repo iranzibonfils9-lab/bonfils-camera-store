@@ -15,6 +15,7 @@ export default async function AdminInventoryPage() {
 
     const name = formData.get("name") as string;
     const category = formData.get("category") as string;
+    const brand = (formData.get("brand") as string) || "BONFILS";
     const wholesalePrice = parseFloat(formData.get("wholesalePrice") as string);
     const suggestedRetail = parseFloat(formData.get("suggestedRetail") as string);
     const stockQuantity = parseInt(formData.get("stockQuantity") as string, 10);
@@ -22,9 +23,14 @@ export default async function AdminInventoryPage() {
 
     if (!name || !wholesalePrice || isNaN(stockQuantity)) return;
 
+    // Generate unique SKU code
+    const generatedSku = `SKU-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+
     await prisma.product.create({
       data: {
+        sku: generatedSku,
         name,
+        brand,
         category: category || "CCTV Cameras",
         wholesalePrice,
         suggestedRetail: suggestedRetail || wholesalePrice * 1.25,
@@ -84,17 +90,29 @@ export default async function AdminInventoryPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700">Category</label>
-                <select
-                  name="category"
-                  className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
-                >
-                  <option value="CCTV Cameras">CCTV Cameras</option>
-                  <option value="DVR / NVR Recorders">DVR / NVR Recorders</option>
-                  <option value="Security Accessories">Security Accessories</option>
-                  <option value="Solar Lighting">Solar Lighting</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">Brand</label>
+                  <input
+                    type="text"
+                    name="brand"
+                    placeholder="e.g. Hikvision / Dahua"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">Category</label>
+                  <select
+                    name="category"
+                    className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="CCTV Cameras">CCTV Cameras</option>
+                    <option value="DVR / NVR Recorders">DVR / NVR Recorders</option>
+                    <option value="Security Accessories">Security Accessories</option>
+                    <option value="Solar Lighting">Solar Lighting</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -176,7 +194,9 @@ export default async function AdminInventoryPage() {
                       <tr key={p.id} className="hover:bg-slate-50">
                         <td className="p-3">
                           <span className="font-bold text-slate-900 block">{p.name}</span>
-                          <span className="text-[10px] text-slate-400">{p.category}</span>
+                          <span className="text-[10px] text-slate-400">
+                            {p.brand} • {p.category} ({p.sku})
+                          </span>
                         </td>
                         <td className="p-3 font-bold text-slate-700">
                           {p.wholesalePrice.toLocaleString()} RWF
