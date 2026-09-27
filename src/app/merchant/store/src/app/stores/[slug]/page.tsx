@@ -12,7 +12,7 @@ export default async function PublicStorefrontSlugPage({
   const resolvedParams = await params;
   const slug = resolvedParams?.slug;
 
-  // Catch-all store fetcher to ensure no 404 is thrown
+  // Search store by slug, ID, or fallback to first active store
   let store = await prisma.store.findFirst({
     where: {
       OR: [{ slug: slug }, { id: slug }],
@@ -24,7 +24,6 @@ export default async function PublicStorefrontSlugPage({
     },
   });
 
-  // Fallback to first available store if slug didn't match directly
   if (!store) {
     store = await prisma.store.findFirst({
       include: {
