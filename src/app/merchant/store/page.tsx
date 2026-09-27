@@ -13,9 +13,8 @@ export default async function MerchantStoreManagementPage() {
     },
   });
 
-  // Safe fallback route so public storefront never throws 404
-  const targetSlug = store?.slug || "bonfils-tropical";
-  const publicUrl = `/stores/${targetSlug}`;
+  const slug = store?.slug || "bonfils-tropical";
+  const publicUrl = `/stores/${slug}`;
 
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
@@ -51,7 +50,7 @@ export default async function MerchantStoreManagementPage() {
           </div>
         </div>
 
-        {/* DETAILS CARD */}
+        {/* PREVIEW CARDS */}
         <div className="grid gap-8 lg:grid-cols-12">
           <div className="lg:col-span-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
             <h2 className="text-lg font-black text-slate-900 mb-4">
@@ -65,15 +64,20 @@ export default async function MerchantStoreManagementPage() {
               </div>
 
               <div>
-                <span className="font-bold text-slate-500 block">Store URL Route:</span>
+                <span className="font-bold text-slate-500 block">Store Public Link:</span>
                 <p className="font-mono text-emerald-600 bg-emerald-50 p-2 rounded-xl text-[11px] font-bold">
-                  /stores/{targetSlug}
+                  https://bonfils-camera-store.vercel.app/stores/{slug}
                 </p>
               </div>
 
               <div>
                 <span className="font-bold text-slate-500 block">Location:</span>
                 <p className="font-bold text-slate-800">{store?.location || "Kigali Downtown Tropical Plaza"}</p>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-500 block">Active Products:</span>
+                <p className="font-bold text-slate-800">{store?.merchantProducts.length || 0} Listed Items</p>
               </div>
             </div>
 
@@ -89,10 +93,13 @@ export default async function MerchantStoreManagementPage() {
 
           <div className="lg:col-span-7 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-black text-slate-900 mb-2">
-              Live Product Catalog ({store?.merchantProducts.length || 0})
+              Live Catalog Preview
             </h2>
+            <p className="text-xs text-slate-500 mb-6">
+              Ibicuruzwa abakiriya babona ku paji y'iduka ryawe.
+            </p>
 
-            <div className="grid gap-4 sm:grid-cols-2 mt-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               {store?.merchantProducts.map(({ product, retailPrice }) => (
                 <div
                   key={product.id}
@@ -108,6 +115,9 @@ export default async function MerchantStoreManagementPage() {
                   <div className="mt-4 border-t border-slate-200 pt-3 flex items-center justify-between">
                     <span className="font-black text-emerald-600 text-sm">
                       {retailPrice.toLocaleString()} RWF
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
+                      Live
                     </span>
                   </div>
                 </div>
