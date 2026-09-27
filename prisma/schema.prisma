@@ -15,14 +15,6 @@ enum Role {
   BUYER
 }
 
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -44,7 +36,6 @@ model Store {
   description String?
   location    String?
   phone       String?
-  isBlocked   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -53,22 +44,21 @@ model Store {
 
   merchantProducts MerchantProduct[]
   orders           Order[]
+  payouts          Payout[]
 }
 
 model Product {
-  id                      String   @id @default(cuid())
-  sku                     String   @unique
-  name                    String
-  category                String
-  brand                   String
-  description             String?
-  wholesalePrice          Float    @default(0)
-  suggestedRetail         Float
-  stockQuantity           Int      @default(0)
-  imageUrl                String?
-  isCustomMerchantProduct Boolean  @default(false)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id              String   @id @default(cuid())
+  sku             String   @unique
+  name            String
+  category        String
+  brand           String
+  description     String?
+  wholesalePrice  Float
+  suggestedRetail Float
+  stockQuantity   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   merchantProducts MerchantProduct[]
   orderItems       OrderItem[]
@@ -77,7 +67,6 @@ model Product {
 model MerchantProduct {
   id          String   @id @default(cuid())
   retailPrice Float
-  isListed    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   storeId   String
@@ -89,34 +78,47 @@ model MerchantProduct {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  trackingNumber  String      @unique @default(cuid())
+  id              String   @id @default(cuid())
+  trackingNumber  String   @default("TRK-0000")
   customerName    String
   customerPhone   String
   deliveryAddress String
   totalAmount     Float
-  platformFee     Float       @default(0) // 2% fee ku custom products
-  merchantEarning Float       @default(0) // 5% commission ku central stock / 98% ku custom
-  status          OrderStatus @default(PENDING)
-  paymentMethod   String      @default("MOMO")
-  createdAt       DateTime    @default(now())
+  netProfit       Float    @default(0)
+  merchantEarning Float    @default(0)
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
 
-  buyerId String?
-  buyer   User?   @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
   storeId String?
-  store   Store?  @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  store   Store?  @relation(fields: [storeId], references: [id])
 
   items OrderItem[]
 }
 
 model OrderItem {
-  id             String @id @default(cuid())
-  quantity       Int
-  retailPrice    Float
-  wholesalePrice Float
+  id          String @id @default(cuid())
+  quantity    Int
+  unitPrice   Float
+  retailPrice Float  @default(0)
 
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
   product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payout {
+  id            String   @id @default(cuid())
+  storeId       String
+  amount        Float
+  accountName   String
+  momoNumber    String
+  status        String   @default("PENDING")
+  referenceCode String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
