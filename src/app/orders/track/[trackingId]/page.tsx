@@ -15,7 +15,7 @@ export default async function OrderTrackingPage({
   // Fetch order from database using tracking ID or fallback search
   const order = await prisma.order.findFirst({
     where: {
-      OR: [{ id: trackingId }, { customerPhone: trackingId }],
+      OR: [{ id: trackingId }, { trackingNumber: trackingId }, { customerPhone: trackingId }],
     },
     include: {
       items: {
@@ -72,7 +72,7 @@ export default async function OrderTrackingPage({
               <div className="text-left sm:text-right">
                 <p className="text-xs font-bold text-slate-500">Total Amount</p>
                 <p className="text-xl font-black text-emerald-600">
-                  {order.totalRetail.toLocaleString()} RWF
+                  {order.totalAmount.toLocaleString()} RWF
                 </p>
               </div>
             </div>
