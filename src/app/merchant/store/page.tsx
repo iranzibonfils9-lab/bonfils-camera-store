@@ -1,117 +1,134 @@
+export const dynamic = "force-dynamic";
+
 import Header from "@/components/layout/Header";
+import prisma from "@/lib/prisma";
+import Link from "next/link";
 
-const merchantStoreInfo = {
-  name: "BONFILS CAMERA - Tropical Branch",
-  merchantName: "Iranzi Bonfils",
-  location: "Kigali Downtown Tropical Plaza, Floor 1",
-  phone: "078 800 0000",
-  email: "store@bonfilscamera.rw",
-  description: "Official reseller of high-quality security cameras, CCTV systems, DVRs, and smart surveillance accessories in Kigali.",
-};
+export default async function MerchantStoreManagementPage() {
+  const store = await prisma.store.findFirst({
+    include: {
+      merchantProducts: {
+        include: { product: true },
+      },
+    },
+  });
 
-const storeProducts = [
-  {
-    id: "prod-1",
-    name: "Hikvision 4MP Outdoor PTZ Camera",
-    category: "CCTV Cameras",
-    retailPrice: 80000,
-    inStock: true,
-  },
-  {
-    id: "prod-2",
-    name: "Dahua 8-Channel DVR System",
-    category: "Recorders",
-    retailPrice: 135000,
-    inStock: true,
-  },
-];
+  const publicUrl = store ? `/stores/${store.slug}` : "/stores";
 
-export default function MerchantPublicStorePage() {
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 pb-16">
       <Header />
 
-      {/* BANNER / STORE HEADER */}
-      <section className="border-b border-slate-200 bg-[#0B192C] px-6 py-12 text-white">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-            <div>
-              <span className="rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400">
-                Verified Reseller Store
-              </span>
-              <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-                {merchantStoreInfo.name}
-              </h1>
-              <p className="mt-2 text-slate-300 max-w-2xl text-sm md:text-base">
-                {merchantStoreInfo.description}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-400">
-                <span>📍 {merchantStoreInfo.location}</span>
-                <span>📞 {merchantStoreInfo.phone}</span>
-                <span>✉️ {merchantStoreInfo.email}</span>
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center mb-8">
+          <div>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wider">
+              PUBLIC STOREFRONT MANAGER
+            </span>
+            <h1 className="mt-2 text-3xl font-black text-slate-900">
+              Live Storefront Settings & Preview
+            </h1>
+            <p className="mt-1 text-xs text-slate-500">
+              Cunga uburyo iduka ryawe rigaragara mu maso y'abakiriya muri Kigali no kuri internet.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <Link
+              href={publicUrl}
+              target="_blank"
+              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-emerald-700 flex items-center gap-2"
+            >
+              <span>👁️</span> Open Live Public Storefront
+            </Link>
+            <Link
+              href="/merchant"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:border-emerald-500 transition"
+            >
+              &larr; Back to Dashboard
+            </Link>
+          </div>
+        </div>
+
+        {/* PREVIEW CARDS & STORE INFO */}
+        <div className="grid gap-8 lg:grid-cols-12">
+          {/* STORE CONFIGURATION */}
+          <div className="lg:col-span-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
+            <h2 className="text-lg font-black text-slate-900 mb-4">
+              Iduka Ryawe Profiling
+            </h2>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <span className="font-bold text-slate-500 block">Store Name:</span>
+                <p className="text-sm font-black text-slate-900">{store?.storeName || "BONFILS CAMERA STORE"}</p>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-500 block">Store URL Slug:</span>
+                <p className="font-mono text-emerald-600 bg-emerald-50 p-2 rounded-xl text-[11px] font-bold">
+                  https://bonfils-camera-store.vercel.app/stores/{store?.slug || "bonfils-tropical"}
+                </p>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-500 block">Location:</span>
+                <p className="font-bold text-slate-800">{store?.location || "Kigali Downtown Tropical Plaza"}</p>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-500 block">Listed Items:</span>
+                <p className="font-bold text-slate-800">{store?.merchantProducts.length || 0} Active Products</p>
               </div>
             </div>
 
-            <a
-              href="/merchant"
-              className="self-start rounded-xl bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20"
-            >
-              Back to Dashboard
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* CATALOG PREVIEW */}
-      <section className="px-6 py-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex items-center justify-between border-b border-slate-200 pb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                Store Catalog
-              </h2>
-              <p className="text-sm text-slate-500">
-                Showing {storeProducts.length} items currently offered by this storefront.
-              </p>
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <Link
+                href={publicUrl}
+                target="_blank"
+                className="w-full block text-center rounded-xl bg-slate-900 py-3 text-xs font-bold text-white hover:bg-slate-800 transition"
+              >
+                Launch Public View Page
+              </Link>
             </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {storeProducts.map((product) => (
-              <div
-                key={product.id}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-              >
-                <div className="flex h-48 items-center justify-center bg-slate-100 p-6 text-slate-400">
-                  <span className="text-sm font-semibold">[ Product Image Placeholder ]</span>
-                </div>
+          {/* STORE PRODUCTS CATALOG PREVIEW */}
+          <div className="lg:col-span-7 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-black text-slate-900 mb-2">
+              Live Public Product Catalog
+            </h2>
+            <p className="text-xs text-slate-500 mb-6">
+              Ibi ni ibicuruzwa abakiriya babona ku paji y'iduka ryawe.
+            </p>
 
-                <div className="p-6">
-                  <span className="text-xs font-semibold text-emerald-600">
-                    {product.category}
-                  </span>
-                  <h3 className="mt-1 text-lg font-bold text-slate-900">
-                    {product.name}
-                  </h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {store?.merchantProducts.map(({ product, retailPrice }) => (
+                <div
+                  key={product.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                      {product.category}
+                    </span>
+                    <h3 className="mt-2 font-bold text-slate-900 text-sm">{product.name}</h3>
+                  </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-                    <div>
-                      <p className="text-xs text-slate-500">Price</p>
-                      <p className="text-xl font-bold text-slate-900">
-                        {product.retailPrice.toLocaleString()} RWF
-                      </p>
-                    </div>
-
-                    <button className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                      Add to Cart
-                    </button>
+                  <div className="mt-4 border-t border-slate-200 pt-3 flex items-center justify-between">
+                    <span className="font-black text-emerald-600 text-sm">
+                      {retailPrice.toLocaleString()} RWF
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
+                      Live
+                    </span>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
