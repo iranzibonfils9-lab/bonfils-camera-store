@@ -16,6 +16,12 @@ export default async function MerchantAddProductPage() {
   // SERVER ACTION: Add Custom Merchant Product
   async function createCustomProduct(formData: FormData) {
     "use server";
+    
+    const actionUser = await getCurrentUser();
+    if (!actionUser || !actionUser.store) {
+      redirect("/auth/login");
+    }
+
     const name = formData.get("name") as string;
     const category = formData.get("category") as string;
     const brand = (formData.get("brand") as string) || "Custom Brand";
@@ -42,7 +48,7 @@ export default async function MerchantAddProductPage() {
     // 2. Attach to Merchant Store Catalog
     await prisma.merchantProduct.create({
       data: {
-        storeId: user.store.id,
+        storeId: actionUser.store.id,
         productId: product.id,
         retailPrice,
         isListed: true,
