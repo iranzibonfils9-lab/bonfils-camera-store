@@ -4,18 +4,17 @@ import prisma from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { customerName, customerPhone, deliveryAddress, items, storeId } = body;
+    const { customerName, customerPhone, deliveryAddress, items } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
     let totalAmount = 0;
-    let platformFee = 0;
+    let netProfit = 0;
     let merchantEarning = 0;
 
-    const trackingNumber = `TRK-KGL-${Math.floor(100000 + Math.random() * 900000)}`;
-
+    // Process order items and calculate automated profit margin
     const orderItemsData = await Promise.all(
       items.map(async (item: { productId: string; quantity: number; retailPrice: number }) => {
         const product = await prisma.product.findUnique({
@@ -24,31 +23,31 @@ export async function POST(req: Request) {
 
         if (!product) throw new Error("Product not found");
 
-        const lineTotal = item.retailPrice * item.quantity;
-        totalAmount += lineTotal;
+        const wholesalePrice = product.wholesalePrice || 0;
+        const retailPrice = item.retailPrice || product.suggestedRetail;
+        const lineTotal = retailPrice * item.quantity;
+        const itemProfit = (retailPrice - wholesalePrice) * item.quantity;
 
-        // CALCULATE COMMISSIONS & FEES
-        if (product.isCustomMerchantProduct) {
-          // Custom product: Admin takes 2% platform fee, Merchant gets 98%
-          const fee = lineTotal * 0.02;
-          platformFee += fee;
-          merchantEarning += lineTotal - fee;
-        } else {
-          // Admin wholesale stock: Merchant gets 5% commission on retail sale
-          const comm = lineTotal * 0.05;
-          merchantEarning += comm;
-          platformFee += lineTotal - comm;
-        }
+        totalAmount += lineTotal;
+        netProfit += itemProfit;
+        merchantEarning += itemProfit; // Merchant net gain after wholesale cost
 
         return {
           productId: item.productId,
           quantity: item.quantity,
-          retailPrice: item.retailPrice,
-          wholesalePrice: product.wholesalePrice || 0,
+          unitPrice: retailPrice,
+          retailPrice: retailPrice,
         };
       })
     );
 
+    // Fetch primary store to assign order to
+    const store = await prisma.store.findFirst();
+
+    // Generate unique Tracking Code
+    const trackingNumber = `TRK-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // Create order entry in database
     const order = await prisma.order.create({
       data: {
         trackingNumber,
@@ -56,11 +55,10 @@ export async function POST(req: Request) {
         customerPhone,
         deliveryAddress,
         totalAmount,
-        platformFee,
+        netProfit,
         merchantEarning,
-        storeId,
-        status: "PROCESSING",
-        paymentMethod: "MTN_MOMO",
+        status: "PENDING",
+        storeId: store?.id,
         items: {
           create: orderItemsData,
         },
@@ -69,19 +67,15 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Order & Invoice generated successfully!",
-      trackingNumber: order.trackingNumber,
+      message: "Order placed successfully!",
       orderId: order.id,
-      invoice: {
-        customerName: order.customerName,
-        totalAmount: order.totalAmount,
-        platformFee: order.platformFee,
-        merchantEarning: order.merchantEarning,
-        status: order.status,
-        date: order.createdAt,
-      },
+      trackingNumber: order.trackingNumber,
+      totalAmount,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to process checkout" },
+      { status: 500 }
+    );
   }
 }
