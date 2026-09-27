@@ -13,7 +13,9 @@ export default async function MerchantStoreManagementPage() {
     },
   });
 
-  const publicUrl = store ? `/stores/${store.slug}` : "/stores";
+  // Safe fallback route so public storefront never throws 404
+  const targetSlug = store?.slug || "bonfils-tropical";
+  const publicUrl = `/stores/${targetSlug}`;
 
   return (
     <main className="min-h-screen bg-slate-50 pb-16">
@@ -36,7 +38,6 @@ export default async function MerchantStoreManagementPage() {
           <div className="flex gap-3">
             <Link
               href={publicUrl}
-              target="_blank"
               className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md transition hover:bg-emerald-700 flex items-center gap-2"
             >
               <span>👁️</span> Open Live Public Storefront
@@ -50,9 +51,8 @@ export default async function MerchantStoreManagementPage() {
           </div>
         </div>
 
-        {/* PREVIEW CARDS & STORE INFO */}
+        {/* DETAILS CARD */}
         <div className="grid gap-8 lg:grid-cols-12">
-          {/* STORE CONFIGURATION */}
           <div className="lg:col-span-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
             <h2 className="text-lg font-black text-slate-900 mb-4">
               Iduka Ryawe Profiling
@@ -65,9 +65,9 @@ export default async function MerchantStoreManagementPage() {
               </div>
 
               <div>
-                <span className="font-bold text-slate-500 block">Store URL Slug:</span>
+                <span className="font-bold text-slate-500 block">Store URL Route:</span>
                 <p className="font-mono text-emerald-600 bg-emerald-50 p-2 rounded-xl text-[11px] font-bold">
-                  https://bonfils-camera-store.vercel.app/stores/{store?.slug || "bonfils-tropical"}
+                  /stores/{targetSlug}
                 </p>
               </div>
 
@@ -75,17 +75,11 @@ export default async function MerchantStoreManagementPage() {
                 <span className="font-bold text-slate-500 block">Location:</span>
                 <p className="font-bold text-slate-800">{store?.location || "Kigali Downtown Tropical Plaza"}</p>
               </div>
-
-              <div>
-                <span className="font-bold text-slate-500 block">Listed Items:</span>
-                <p className="font-bold text-slate-800">{store?.merchantProducts.length || 0} Active Products</p>
-              </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100">
               <Link
                 href={publicUrl}
-                target="_blank"
                 className="w-full block text-center rounded-xl bg-slate-900 py-3 text-xs font-bold text-white hover:bg-slate-800 transition"
               >
                 Launch Public View Page
@@ -93,16 +87,12 @@ export default async function MerchantStoreManagementPage() {
             </div>
           </div>
 
-          {/* STORE PRODUCTS CATALOG PREVIEW */}
           <div className="lg:col-span-7 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-black text-slate-900 mb-2">
-              Live Public Product Catalog
+              Live Product Catalog ({store?.merchantProducts.length || 0})
             </h2>
-            <p className="text-xs text-slate-500 mb-6">
-              Ibi ni ibicuruzwa abakiriya babona ku paji y'iduka ryawe.
-            </p>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 mt-4">
               {store?.merchantProducts.map(({ product, retailPrice }) => (
                 <div
                   key={product.id}
@@ -118,9 +108,6 @@ export default async function MerchantStoreManagementPage() {
                   <div className="mt-4 border-t border-slate-200 pt-3 flex items-center justify-between">
                     <span className="font-black text-emerald-600 text-sm">
                       {retailPrice.toLocaleString()} RWF
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
-                      Live
                     </span>
                   </div>
                 </div>
